@@ -1688,7 +1688,6 @@ public int Handler_NV_MapVoteMenu(NativeVote menu, MenuAction action, int param1
 		case MenuAction_End:
 		{
 			NativeVotes_Close(menu);
-			delete menu;
 		}
 		
 		case MenuAction_DisplayItem:
