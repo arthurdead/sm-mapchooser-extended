@@ -362,55 +362,40 @@ public Action Command_Nominate(int client, int args)
 		return Plugin_Handled;
 	}
 	
-	char mapname[PLATFORM_MAX_PATH];
-	GetCmdArg(1, mapname, sizeof(mapname));
-	
-	ShowMatches(client, mapname);
+	char arg1[PLATFORM_MAX_PATH];
+	GetCmdArg(1, arg1, sizeof(arg1));
 
-	return Plugin_Handled;
-}
-
-void ShowMatches(int client, char[] mapname) 
-{
 	Menu SubMapMenu = new Menu(Handler_MapSelectMenu, MENU_ACTIONS_DEFAULT|MenuAction_DrawItem|MenuAction_DisplayItem);
-	SubMapMenu.SetTitle("Nominate Menu\nMaps matching \"%s\"\n ", mapname);
+	SubMapMenu.SetTitle("Nominate Menu\nMaps matching \"%s\"\n ", arg1);
 	SubMapMenu.ExitButton = true;
-
-	bool isCurrent = false;
-	bool isExclude = false;
-
-	char map[PLATFORM_MAX_PATH];
-	char lastMap[PLATFORM_MAX_PATH];
-
-	ArrayList excludeMaps = null;
-	char currentMap[32];
 	
-	excludeMaps = new ArrayList(ByteCountToCells(PLATFORM_MAX_PATH));
+	ArrayList excludeMaps = new ArrayList(ByteCountToCells(PLATFORM_MAX_PATH));
 	GetExcludeMapList(excludeMaps);
 
+	char currentMap[PLATFORM_MAX_PATH];
 	GetCurrentMap(currentMap, sizeof(currentMap));
 
+	char map[PLATFORM_MAX_PATH];
+	char mapName[PLATFORM_MAX_PATH];
+
 	for (int i = 0; i < g_MapList.Length; i++)
-	{	
+	{
 		g_MapList.GetString(i, map, sizeof(map));
 
-		if(StrContains(map, mapname, false) != -1)
+		if(StrContains(map, arg1, false) != -1)
 		{
 			if (g_Cvar_ExcludeCurrent.BoolValue && StrEqual(map, currentMap))
 			{
-				isCurrent = true;
 				continue;
 			}
 
 			if (g_Cvar_ExcludeOld.BoolValue && excludeMaps.FindString(map) != -1)
 			{
-				isExclude = true;
 				continue;
 			}
 
 			if (g_Cvar_DisplayName.BoolValue)
 			{
-				char mapName[PLATFORM_MAX_PATH];
 				GetMapName(map, mapName, sizeof(mapName));
 				SubMapMenu.AddItem(map, mapName);
 			}
@@ -418,64 +403,20 @@ void ShowMatches(int client, char[] mapname)
 			{
 				SubMapMenu.AddItem(map, map);
 			}
-
-			strcopy(lastMap, sizeof(map), map);
 		}
 	}
 
 	delete excludeMaps;
 
-	switch (GetMenuItemCount(SubMapMenu)) 
-	{
-		case 0:
-		{
-			if (isCurrent) 
-			{
-				CReplyToCommand(client, "[NE] %t", "Can't Nominate Current Map");
-			}
-			else if (isExclude)
-			{
-				CReplyToCommand(client, "[NE] %t", "Map in Exclude List");
-			}
-			else 
-			{
-				CReplyToCommand(client, "[NE] %t", "Map was not found", mapname);
-			}
+	if(SubMapMenu.ItemCount > 1) {
+		SubMapMenu.Display(client, MENU_TIME_FOREVER);
+	} else {
+		delete SubMapMenu;
 
-			delete SubMapMenu;
-		}
-		case 1:
-		{
-			NominateResult result = NominateMap(lastMap, false, client);
-	
-			if (result > Nominate_Replaced)
-			{
-				if (result == Nominate_AlreadyInVote)
-				{
-					CReplyToCommand(client, "[NE] %t", "Map Already In Vote", lastMap);
-				}
-				else
-				{
-					CReplyToCommand(client, "[NE] %t", "Map Already Nominated");
-				}
-			}
-			else 
-			{
-				g_mapTrie.SetValue(lastMap, MAPSTATUS_DISABLED|MAPSTATUS_EXCLUDE_NOMINATED);
-
-				char name[MAX_NAME_LENGTH];
-				GetClientName(client, name, sizeof(name));
-				CPrintToChatAll("[NE] %t", "Map Nominated", name, lastMap);
-				LogMessage("\"%L\" nominated %s", client, lastMap);
-			}
-
-			delete SubMapMenu;
-		}
-		default:
-		{
-			SubMapMenu.Display(client, MENU_TIME_FOREVER);
-		}
+		Internal_NominateCommand(client, arg1, false);
 	}
+
+	return Plugin_Handled;
 }
 
 Action Internal_NominateCommand(int client, const char[] mapname, bool isVoteMenu)
@@ -491,6 +432,11 @@ Action Internal_NominateCommand(int client, const char[] mapname, bool isVoteMen
 	char displayName[PLATFORM_MAX_PATH];
 	GetMapDisplayName(resolvedMap, displayName, sizeof(displayName));
 	
+	if (g_Cvar_DisplayName.BoolValue)
+	{
+		GetMapName(displayName, displayName, sizeof(displayName));
+	}
+
 	int status;
 	if (!g_mapTrie.GetValue(resolvedMap, status))
 	{
