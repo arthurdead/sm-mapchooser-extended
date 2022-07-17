@@ -45,6 +45,7 @@
 
 #undef REQUIRE_PLUGIN
 #include <nativevotes>
+#tryinclude <mapcycle_manager>
 
 #define MCE_VERSION "1.11.0 beta 5"
 
@@ -172,6 +173,8 @@ bool g_NativeVotes = false;
 char g_GameModName[64];
 bool g_WarningInProgress = false;
 bool g_AddNoVote = false;
+
+bool g_MCM;
 
 RoundCounting g_RoundCounting = RoundCounting_Standard;
 
@@ -419,6 +422,8 @@ public void OnLibraryAdded(const char[] name)
 	if (StrEqual(name, NV) && NativeVotes_IsVoteTypeSupported(NativeVotesType_NextLevelMult))
 	{
 		g_NativeVotes = true;
+	} else if(StrEqual(name, "mapcycle_manager")) {
+		g_MCM = true;
 	}
 }
 
@@ -427,6 +432,8 @@ public void OnLibraryRemoved(const char[] name)
 	if (StrEqual(name, NV))
 	{
 		g_NativeVotes = false;
+	} else if(StrEqual(name, "mapcycle_manager")) {
+		g_MCM = false;
 	}
 }
 
@@ -447,19 +454,31 @@ public void OnMapStart()
 	}
 }
 
+public void MCM_MapcycleChanged(ArrayList maps, MCM_ChangeFrom from)
+{
+	delete g_MapList;
+	g_MapList = maps.Clone();
+
+	CreateNextVote();
+}
+
 public void OnConfigsExecuted()
 {
-	if (ReadMapList(g_MapList,
-					 g_mapFileSerial, 
-					 "mapchooser",
-					 MAPLIST_FLAG_CLEARARRAY|MAPLIST_FLAG_MAPSFOLDER)
-		!= null)
-		
-	{
-		if (g_mapFileSerial == -1)
+	if(!g_MCM) {
+		if (ReadMapList(g_MapList,
+						 g_mapFileSerial, 
+						 "mapchooser",
+						 MAPLIST_FLAG_CLEARARRAY|MAPLIST_FLAG_MAPSFOLDER)
+			!= null)
+			
 		{
-			LogError("Unable to create a valid map list.");
+			if (g_mapFileSerial == -1)
+			{
+				LogError("Unable to create a valid map list.");
+			}
 		}
+
+		CreateNextVote();
 	}
 	
 	// Disable the next level vote in TF2 and CS:GO
@@ -470,7 +489,6 @@ public void OnConfigsExecuted()
 		g_Cvar_VoteNextLevel.BoolValue = false;
 	}
 	
-	CreateNextVote();
 	SetupTimeleftTimer();
 	
 	g_TotalRounds = 0;

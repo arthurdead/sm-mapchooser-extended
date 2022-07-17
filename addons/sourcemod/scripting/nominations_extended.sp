@@ -39,6 +39,7 @@
 
 #undef REQUIRE_PLUGIN
 #include <nativevotes>
+#tryinclude <mapcycle_manager>
 
 #pragma semicolon 1
 #pragma newdecls required
@@ -79,6 +80,8 @@ ConVar g_Cvar_MarkCustomMaps;
 bool g_NativeVotes = false;
 bool g_RegisteredMenusChangeLevel = false;
 bool g_RegisteredMenusNextLevel = false;
+
+bool g_MCM;
 
 #define NV "nativevotes"
 
@@ -148,6 +151,8 @@ public void OnLibraryAdded(const char[] name)
 	{
 		g_NativeVotes = true;
 		RegisterVoteHandler();
+	} else if(StrEqual(name, "mapcycle_manager")) {
+		g_MCM = true;
 	}
 }
 
@@ -158,6 +163,8 @@ public void OnLibraryRemoved(const char[] name)
 		g_NativeVotes = false;
 		g_RegisteredMenusNextLevel = false;
 		g_RegisteredMenusChangeLevel = false;
+	} else if(StrEqual(name, "mapcycle_manager")) {
+		g_MCM = false;
 	}
 }
 
@@ -219,21 +226,31 @@ void RegisterVoteHandler()
 	}
 }
 
+public void MCM_MapcycleChanged(ArrayList maps, MCM_ChangeFrom from)
+{
+	delete g_MapList;
+	g_MapList = maps.Clone();
+
+	BuildMapMenu();
+}
+
 public void OnConfigsExecuted()
 {
-	if (ReadMapList(g_MapList,
-					g_mapFileSerial,
-					"nominations",
-					MAPLIST_FLAG_CLEARARRAY|MAPLIST_FLAG_MAPSFOLDER)
-		== INVALID_HANDLE)
-	{
-		if (g_mapFileSerial == -1)
+	if(!g_MCM) {
+		if (ReadMapList(g_MapList,
+						g_mapFileSerial,
+						"nominations",
+						MAPLIST_FLAG_CLEARARRAY|MAPLIST_FLAG_MAPSFOLDER)
+			== INVALID_HANDLE)
 		{
-			SetFailState("Unable to create a valid map list.");
+			if (g_mapFileSerial == -1)
+			{
+				SetFailState("Unable to create a valid map list.");
+			}
 		}
+		
+		BuildMapMenu();
 	}
-	
-	BuildMapMenu();
 }
 
 public void OnNominationRemoved(const char[] map, int owner)
