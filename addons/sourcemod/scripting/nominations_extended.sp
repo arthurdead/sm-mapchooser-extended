@@ -386,8 +386,12 @@ public Action Command_Nominate(int client, int args)
 	SubMapMenu.SetTitle("Nominate Menu\nMaps matching \"%s\"\n ", arg1);
 	SubMapMenu.ExitButton = true;
 	
-	ArrayList excludeMaps = new ArrayList(ByteCountToCells(PLATFORM_MAX_PATH));
-	GetExcludeMapList(excludeMaps);
+	ArrayList excludeMaps = null;
+
+	if(g_Cvar_ExcludeOld.BoolValue) {
+		excludeMaps = new ArrayList(ByteCountToCells(PLATFORM_MAX_PATH));
+		GetExcludeMapList(excludeMaps);
+	}
 
 	char currentMap[PLATFORM_MAX_PATH];
 	GetCurrentMap(currentMap, sizeof(currentMap));
@@ -406,7 +410,7 @@ public Action Command_Nominate(int client, int args)
 				continue;
 			}
 
-			if (g_Cvar_ExcludeOld.BoolValue && excludeMaps.FindString(map) != -1)
+			if (g_Cvar_ExcludeOld.BoolValue && (excludeMaps && excludeMaps.FindString(map) != -1))
 			{
 				continue;
 			}
@@ -592,7 +596,7 @@ void BuildMapMenu()
 		/* Dont bother with this check if the current map check passed */
 		if (g_Cvar_ExcludeOld.BoolValue && status == MAPSTATUS_ENABLED)
 		{
-			if (excludeMaps.FindString(map))
+			if (excludeMaps.FindString(map) != -1)
 			{
 				status = MAPSTATUS_DISABLED|MAPSTATUS_EXCLUDE_PREVIOUS;
 			}
