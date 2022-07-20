@@ -454,7 +454,7 @@ public void OnMapStart()
 	}
 }
 
-public void MCM_MapcycleChanged(ArrayList maps, MCM_ChangeFrom from)
+public void mcm_changed(ArrayList maps, mcm_changed_from from)
 {
 	delete g_MapList;
 	g_MapList = maps.Clone();
