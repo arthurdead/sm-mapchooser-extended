@@ -271,6 +271,8 @@ public Action Command_List_Soundsets(int client, int args)
 		g_SetNames.GetString(i, setName, sizeof(setName));
 		ReplyToCommand(client, "[SM] %s", setName);
 	}
+
+	return Plugin_Handled;
 }
 
 void PlaySound(SoundEvent event)

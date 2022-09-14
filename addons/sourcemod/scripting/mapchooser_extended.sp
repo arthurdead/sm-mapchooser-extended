@@ -413,7 +413,9 @@ public void OnAllPluginsLoaded()
 	{
 		SetFailState("This plugin replaces mapchooser.  You cannot run both at once.");
 	}
-	
+
+	g_MCM = LibraryExists("mapcycle_manager");
+
 	g_NativeVotes = LibraryExists(NV) && NativeVotes_IsVoteTypeSupported(NativeVotesType_NextLevelMult);
 }
 
@@ -600,6 +602,7 @@ public Action Command_ReloadMaps(int client, int args)
 {
 	InitializeOfficialMapList();
 	InitializeMapNames();
+	return Plugin_Handled;
 }
 
 public void OnMapTimeLeftChanged()
@@ -658,6 +661,8 @@ public Action Timer_StartWarningTimer(Handle timer)
 	{
 		SetupWarningTimer(WarningType_Vote);
 	}
+
+	return Plugin_Continue;
 }
 
 public Action Timer_StartMapVote(Handle timer, DataPack data)
@@ -2052,6 +2057,8 @@ public int Native_InitiateVote(Handle plugin, int numParams)
 
 	SetupWarningTimer(WarningType_Vote, when, inputarray);
 	//InitiateVote(when, inputarray);
+
+	return 0;
 }
 
 public int Native_CanVoteStart(Handle plugin, int numParams)
@@ -2075,7 +2082,7 @@ public int Native_GetExcludeMapList(Handle plugin, int numParams)
 	
 	if (array == null)
 	{
-		return;	
+		return 0;	
 	}
 	int size = g_OldMapList.Length;
 	char map[PLATFORM_MAX_PATH];
@@ -2086,7 +2093,7 @@ public int Native_GetExcludeMapList(Handle plugin, int numParams)
 		array.PushString(map);	
 	}
 	
-	return;
+	return 0;
 }
 
 public int Native_GetNominatedMapList(Handle plugin, int numParams)
@@ -2095,7 +2102,7 @@ public int Native_GetNominatedMapList(Handle plugin, int numParams)
 	ArrayList ownerarray = view_as<ArrayList>(GetNativeCell(2));
 	
 	if (maparray == null)
-		return;
+		return 0;
 
 	char map[PLATFORM_MAX_PATH];
 
@@ -2112,7 +2119,7 @@ public int Native_GetNominatedMapList(Handle plugin, int numParams)
 		}
 	}
 
-	return;
+	return 0;
 }
 
 // Functions new to Mapchooser Extended
@@ -2217,8 +2224,8 @@ stock void InitializeMapNames()
 	delete SMC;
 }
 
-public SMCResult NewSection(Handle smc, const char[] name, bool opt_quotes) { }
-public SMCResult EndSection(Handle smc) { }  
+public SMCResult NewSection(Handle smc, const char[] name, bool opt_quotes) { return SMCParse_Continue; }
+public SMCResult EndSection(Handle smc) { return SMCParse_Continue; }  
 public SMCResult KeyValue(Handle smc, const char[] key, const char[] value, bool key_quotes, bool value_quotes)
 {
 	if (g_tempMapFile == 0)
@@ -2233,6 +2240,8 @@ public SMCResult KeyValue(Handle smc, const char[] key, const char[] value, bool
 		g_MapNameUFilter.PushString(key);
 		g_MapNameUReplace.PushString(value);
 	}
+
+	return SMCParse_Continue;
 }
 
 stock void InitializeOfficialMapList()
